@@ -17,7 +17,6 @@ let corsOptions = {
 app.use(cors(corsOptions))
 
 
-
 // DEFINITION DES ROUTES 
 
 // Route par défaut
@@ -29,6 +28,41 @@ app.get('/', (req, res) => {
 app.post('/test', (req, res) => {
     let { username } = req.body
     res.json("Bien reçu " + username)
+})
+
+app.post('/signup', (req, res) => {
+    let { username, email, password } = req.body
+
+    // Vérification qu'aucun ne soit undefined
+    if (!username && !email && !password) {
+        return res.status(403).json("Un des éléments est undefined")
+    }
+
+    // Vérification des données avec REGEX (qu'on passera pour le moment)
+
+    // Verif est ce que le user existe déjà ?
+    let sql = "SELECT * FROM users WHERE username = ? OR email = ?"
+
+    db.query(sql, [username, email], (err, results) => {
+        if (err) {
+
+            console.log(err)
+            res.status(500)
+
+        } else {
+            if (results.length) {
+
+                if (username === results[0].username) {
+                    res.json("Username déjà utilisé")
+                } else {
+                    res.json("L'email est déjà utilisé")
+                }
+
+                return
+
+            } 
+        }
+    })
 })
 
 // Ecoute sur le port 3000
