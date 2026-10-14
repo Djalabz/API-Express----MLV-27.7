@@ -1,4 +1,5 @@
 const express =  require("express")
+const bcrypt = require('bcrypt')
 const app = express()
 const port = 3000
 const cors = require("cors")
@@ -40,16 +41,18 @@ app.post('/signup', (req, res) => {
 
     // Vérification des données avec REGEX (qu'on passera pour le moment)
 
+
     // Verif est ce que le user existe déjà ?
     let sql = "SELECT * FROM users WHERE username = ? OR email = ?"
 
+    // On éxecute ensuite la query avec dans un tableau les variables à remplacer par les ?
     db.query(sql, [username, email], (err, results) => {
         if (err) {
-
             console.log(err)
             res.status(500)
 
         } else {
+            // Si on a un result on vérifie qui du nom ou email est déj)à) utilisé
             if (results.length) {
 
                 if (username === results[0].username) {
@@ -60,7 +63,27 @@ app.post('/signup', (req, res) => {
 
                 return
 
-            } 
+            } else {
+                // Requete d'ajout du user en BDD
+                sql = "INSERT INTO users(username, email, password) VALUES(?, ?, ?)"
+
+                // On vient hasher impérativement le mdp avant de l'envoyer en BDD
+                bcrypt.hash(password, 10, (err, hash) => {
+                    if (err) {
+                        res.status(500).json("Erreur lors du hashage")
+                    } else {
+                        // On éxecute la req avec db.query
+
+                        db.query(sql, [username, email, hash], (err, results) => {
+                            if (err) {
+                                console.log(err)
+                            } else {
+                                res.status(200).json("User ajouté avec succès")
+                            }
+                        })
+                    }
+                })
+            }
         }
     })
 })
