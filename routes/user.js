@@ -2,6 +2,8 @@ const express = require("express")
 const router = express.Router() 
 const db = require("../config/db")
 const bcrypt = require("bcrypt")
+const jwt = require("jsonwebtoken")
+require('dotenv').config()
 
 
 // Routes qui concernent les actions du user
@@ -65,6 +67,40 @@ router.post('/signup', (req, res) => {
 })
 
 // A FAIRE : Login et Logout
+router.post('/login', (req, res) => {
+    console.log(req.body)
+
+    let { username, password } = req.body
+
+    // On vient vérifier qu'il y ait bien un user avec le username correspondant
+    let sql = "SELECT * FROM users WHERE username = ?"
+
+    db.query(sql, [username], (error, results) => {
+        if (error) {
+            console.log(error)
+            res.status(500)
+        } else {
+            // Si on trouve bien un user acvec le bon username on vient vérifier le mdp
+            if (results.length) {
+
+                let user = { id_user : results[0].id_user, username : results[0].username, email : results[0].email } 
+
+                // On compare les hash de mdp -> True si c'est bien les memes 
+                bcrypt.compare(password, results[0].password, (err, results) => {
+                    if (err) {
+                        console.log(err)
+                        res.status(500)
+
+                    } else if (results) {
+                        const accessToken = jwt.sign(user , process.env.JWT_TOKEN_SECRET, { expiresIn: '120m'});
+
+                        res.json(accessToken)
+                    }
+                })
+            }
+        }
+    })
+})
 
 // Faire une route "pirate" ou autre nom qui est déstiné à recevoir les elements du LS et des cookies que vous avez dérobé
 // Une fois les données pirates reçues, affichez les dans le terminal ou via une réponse 
